@@ -1,0 +1,561 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AI-Powered Threat Intelligence Dashboard",
+    "description": "Comprehensive threat intelligence monitoring and analysis dashboard",
+    "tags": ["threat-intelligence", "security", "ai"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "schemaVersion": 30,
+    "version": 1,
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "time_range",
+          "type": "interval",
+          "query": "1h,6h,12h,24h,7d,30d",
+          "current": {
+            "text": "24h",
+            "value": "24h"
+          }
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "High Threat Alerts",
+          "datasource": "PostgreSQL",
+          "enable": true,
+          "hide": false,
+          "iconColor": "red",
+          "query": "SELECT created_at as time, concat(ioc_type, ': ', ioc_value) as title, ai_summary as text FROM threat_intelligence WHERE threat_level IN ('HIGH', 'CRITICAL') AND created_at >= $__timeFrom() AND created_at <= $__timeTo() ORDER BY created_at",
+          "textColumn": "text",
+          "titleColumn": "title"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Threat Intelligence Overview",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT COUNT(*) as total_iocs, COUNT(CASE WHEN threat_level = 'CRITICAL' THEN 1 END) as critical, COUNT(CASE WHEN threat_level = 'HIGH' THEN 1 END) as high, COUNT(CASE WHEN threat_level = 'MEDIUM' THEN 1 END) as medium, COUNT(CASE WHEN threat_level = 'LOW' THEN 1 END) as low FROM threat_intelligence WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo()",
+            "format": "table"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 10},
+                {"color": "red", "value": 50}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "horizontal",
+          "textMode": "auto",
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "center"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Threat Levels Distribution",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT threat_level as metric, COUNT(*) as value FROM threat_intelligence WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() GROUP BY threat_level ORDER BY CASE threat_level WHEN 'CRITICAL' THEN 4 WHEN 'HIGH' THEN 3 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 1 END DESC",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "pieType": "pie",
+          "displayLabels": ["name", "value"],
+          "legend": {
+            "displayMode": "list",
+            "placement": "right"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "vis": false
+              }
+            },
+            "mappings": [],
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "CRITICAL"},
+              "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "dark-red"}}]
+            },
+            {
+              "matcher": {"id": "byName", "options": "HIGH"},
+              "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]
+            },
+            {
+              "matcher": {"id": "byName", "options": "MEDIUM"},
+              "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "yellow"}}]
+            },
+            {
+              "matcher": {"id": "byName", "options": "LOW"},
+              "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "green"}}]
+            }
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "title": "IOC Types Distribution",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT ioc_type as metric, COUNT(*) as value FROM threat_intelligence WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() GROUP BY ioc_type ORDER BY COUNT(*) DESC",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "pieType": "donut",
+          "displayLabels": ["name", "value"],
+          "legend": {
+            "displayMode": "list",
+            "placement": "right"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Threat Intelligence Timeline",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT $__timeGroup(created_at,'$__interval') as time, COUNT(*) as total, COUNT(CASE WHEN threat_level = 'CRITICAL' THEN 1 END) as critical, COUNT(CASE WHEN threat_level = 'HIGH' THEN 1 END) as high FROM threat_intelligence WHERE $__timeFilter(created_at) GROUP BY 1 ORDER BY 1",
+            "format": "time_series"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 1,
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": {
+                "mode": "none",
+                "group": "A"
+              },
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "vis": false
+              }
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Top Threat Sources",
+        "type": "barchart",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 22},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT source as metric, COUNT(*) as value FROM threat_intelligence WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() GROUP BY source ORDER BY COUNT(*) DESC LIMIT 10",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "barWidth": 0.97,
+          "groupWidth": 0.7,
+          "legend": {
+            "displayMode": "hidden"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Enrichment Performance",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 12, "x": 12, "y": 22},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT source_name as metric, AVG(api_response_time_ms) as value FROM enrichment_sources WHERE retrieved_at >= $__timeFrom() AND retrieved_at <= $__timeTo() AND is_successful = true GROUP BY source_name",
+            "format": "table"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1000},
+                {"color": "red", "value": 5000}
+              ]
+            }
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "orientation": "horizontal"
+        }
+      },
+      {
+        "id": 7,
+        "title": "API Success Rates",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 12, "x": 12, "y": 26},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT source_name as metric, (COUNT(CASE WHEN is_successful THEN 1 END) * 100.0 / COUNT(*)) as value FROM enrichment_sources WHERE retrieved_at >= $__timeFrom() AND retrieved_at <= $__timeTo() GROUP BY source_name",
+            "format": "table"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 80},
+                {"color": "green", "value": 95}
+              ]
+            }
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "orientation": "horizontal"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Recent High-Threat IOCs",
+        "type": "table",
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 30},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT ioc_value as \"IOC Value\", ioc_type as \"Type\", threat_level as \"Threat Level\", threat_score as \"Score\", confidence as \"Confidence\", source as \"Source\", created_at as \"First Seen\" FROM threat_intelligence WHERE threat_level IN ('HIGH', 'CRITICAL') AND created_at >= $__timeFrom() AND created_at <= $__timeTo() ORDER BY threat_score DESC, created_at DESC LIMIT 50",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "Score"
+            }
+          ]
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto",
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Threat Level"
+              },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "options": {
+                        "CRITICAL": {
+                          "color": "dark-red",
+                          "index": 0
+                        }
+                      },
+                      "type": "value"
+                    },
+                    {
+                      "options": {
+                        "HIGH": {
+                          "color": "red",
+                          "index": 1
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Score"
+              },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "gradient-gauge"
+                },
+                {
+                  "id": "min",
+                  "value": 0
+                },
+                {
+                  "id": "max",
+                  "value": 100
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 30
+                      },
+                      {
+                        "color": "red",
+                        "value": 70
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 9,
+        "title": "Alert Activity",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 40},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT $__timeGroup(sent_at,'$__interval') as time, COUNT(*) as alerts FROM threat_alerts WHERE $__timeFilter(sent_at) GROUP BY 1 ORDER BY 1",
+            "format": "time_series"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Alerts Sent",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "bars",
+              "fillOpacity": 80,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "vis": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Workflow Execution Status",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 40},
+        "targets": [
+          {
+            "datasource": "PostgreSQL",
+            "rawSql": "SELECT status as metric, COUNT(*) as value FROM workflow_executions WHERE start_time >= $__timeFrom() AND start_time <= $__timeTo() GROUP BY status",
+            "format": "table"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "options": {
+                  "success": {
+                    "color": "green",
+                    "index": 0
+                  }
+                },
+                "type": "value"
+              },
+              {
+                "options": {
+                  "error": {
+                    "color": "red",
+                    "index": 1
+                  }
+                },
+                "type": "value"
+              },
+              {
+                "options": {
+                  "running": {
+                    "color": "yellow",
+                    "index": 2
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      }
+    ]
+  },
+  "overwrite": false
+}

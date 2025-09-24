@@ -1,0 +1,787 @@
+{
+  "name": "AI-Powered Threat Intelligence System",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "threat-intel",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [260, 300],
+      "webhookId": "threat-intel-webhook"
+    },
+    {
+      "parameters": {
+        "protocol": "IMAP",
+        "server": "={{ $('Email Credentials').first().json.server }}",
+        "port": "={{ $('Email Credentials').first().json.port }}",
+        "secure": true,
+        "email": "={{ $('Email Credentials').first().json.email }}",
+        "password": "={{ $('Email Credentials').first().json.password }}",
+        "folder": "INBOX",
+        "allowUnauthorizedCerts": false,
+        "markSeen": true,
+        "downloadAttachments": true
+      },
+      "id": "email-trigger",
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [260, 480],
+      "credentials": {
+        "imap": {
+          "id": "email-credentials",
+          "name": "Email Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Data normalization to STIX-like format\nconst items = $input.all();\nconst normalizedItems = [];\n\nfor (const item of items) {\n  let normalizedItem = {\n    type: 'bundle',\n    id: `bundle--${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,\n    spec_version: '2.1',\n    objects: []\n  };\n  \n  // Determine data source and format\n  const source = item.json.source || 'unknown';\n  const rawData = item.json.body || item.json.data || item.json;\n  \n  // Create STIX Domain Objects based on input type\n  if (rawData.ip_address || rawData.ip) {\n    const ip = rawData.ip_address || rawData.ip;\n    normalizedItem.objects.push({\n      type: 'ipv4-addr',\n      id: `ipv4-addr--${ip.replace(/\\./g, '-')}`,\n      value: ip,\n      x_source: source,\n      x_timestamp: new Date().toISOString(),\n      x_raw_data: rawData\n    });\n  }\n  \n  if (rawData.domain || rawData.hostname) {\n    const domain = rawData.domain || rawData.hostname;\n    normalizedItem.objects.push({\n      type: 'domain-name',\n      id: `domain-name--${domain.replace(/\\./g, '-')}`,\n      value: domain,\n      x_source: source,\n      x_timestamp: new Date().toISOString(),\n      x_raw_data: rawData\n    });\n  }\n  \n  if (rawData.hash || rawData.md5 || rawData.sha1 || rawData.sha256) {\n    const hash = rawData.hash || rawData.md5 || rawData.sha1 || rawData.sha256;\n    const hashType = rawData.sha256 ? 'SHA-256' : rawData.sha1 ? 'SHA-1' : 'MD5';\n    normalizedItem.objects.push({\n      type: 'file',\n      id: `file--${hash}`,\n      hashes: {\n        [hashType]: hash\n      },\n      x_source: source,\n      x_timestamp: new Date().toISOString(),\n      x_raw_data: rawData\n    });\n  }\n  \n  if (rawData.url) {\n    normalizedItem.objects.push({\n      type: 'url',\n      id: `url--${Buffer.from(rawData.url).toString('base64').replace(/[^a-zA-Z0-9]/g, '')}`,\n      value: rawData.url,\n      x_source: source,\n      x_timestamp: new Date().toISOString(),\n      x_raw_data: rawData\n    });\n  }\n  \n  // Add indicator if threat data present\n  if (normalizedItem.objects.length > 0) {\n    normalizedItem.objects.push({\n      type: 'indicator',\n      id: `indicator--${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,\n      created: new Date().toISOString(),\n      modified: new Date().toISOString(),\n      pattern: `[${normalizedItem.objects[0].type}:value = '${normalizedItem.objects[0].value || normalizedItem.objects[0].hashes}']`,\n      labels: ['malicious-activity'],\n      x_confidence: rawData.confidence || 50,\n      x_source: source,\n      x_raw_data: rawData\n    });\n  }\n  \n  normalizedItems.push({ json: normalizedItem });\n}\n\nreturn normalizedItems;"
+      },
+      "id": "data-normalization",
+      "name": "Data Normalization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [580, 390]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Deduplication logic\nconst items = $input.all();\nconst seen = new Set();\nconst deduplicatedItems = [];\n\nfor (const item of items) {\n  const bundle = item.json;\n  \n  for (const obj of bundle.objects) {\n    if (obj.type === 'indicator') {\n      // Create unique key for deduplication\n      const key = `${obj.pattern}_${obj.x_source}`;\n      \n      if (!seen.has(key)) {\n        seen.add(key);\n        deduplicatedItems.push({ json: bundle });\n      } else {\n        // Update confidence if higher\n        const existingItem = deduplicatedItems.find(existing => \n          existing.json.objects.some(existingObj => \n            existingObj.type === 'indicator' && \n            existingObj.pattern === obj.pattern && \n            existingObj.x_source === obj.x_source\n          )\n        );\n        \n        if (existingItem) {\n          const existingIndicator = existingItem.json.objects.find(existingObj => \n            existingObj.type === 'indicator' && \n            existingObj.pattern === obj.pattern\n          );\n          \n          if (obj.x_confidence > existingIndicator.x_confidence) {\n            existingIndicator.x_confidence = obj.x_confidence;\n            existingIndicator.modified = new Date().toISOString();\n          }\n        }\n      }\n    }\n  }\n}\n\nreturn deduplicatedItems.length > 0 ? deduplicatedItems : [{ json: { message: 'No new unique threats found' } }];"
+      },
+      "id": "deduplication",
+      "name": "Deduplication",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 390]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "ip-condition",
+              "leftValue": "={{ $json.objects?.[0]?.type }}",
+              "rightValue": "ipv4-addr",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-by-type",
+      "name": "Route by IOC Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1020, 390]
+    },
+    {
+      "parameters": {
+        "url": "https://otx.alienvault.com/api/v1/indicators/IPv4/{{ $json.objects[0].value }}/general",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-OTX-API-KEY",
+              "value": "={{ $('OTX Credentials').first().json.api_key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "otx-enrichment",
+      "name": "OTX Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1240, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "otx-credentials",
+          "name": "OTX Credentials"
+        }
+      },
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "url": "https://www.virustotal.com/vtapi/v2/ip-address/report",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $('VirusTotal Credentials').first().json.api_key }}"
+            },
+            {
+              "name": "ip",
+              "value": "={{ $json.objects[0].value }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "virustotal-enrichment",
+      "name": "VirusTotal Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1240, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "virustotal-credentials",
+          "name": "VirusTotal Credentials"
+        }
+      },
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "url": "https://api.greynoise.io/v3/community/{{ $json.objects[0].value }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $('GreyNoise Credentials').first().json.api_key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "greynoise-enrichment",
+      "name": "GreyNoise Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1240, 500],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "greynoise-credentials",
+          "name": "GreyNoise Credentials"
+        }
+      },
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "url": "https://api.shodan.io/shodan/host/{{ $json.objects[0].value }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $('Shodan Credentials').first().json.api_key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "shodan-enrichment",
+      "name": "Shodan Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1240, 600],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "shodan-credentials",
+          "name": "Shodan Credentials"
+        }
+      },
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "url": "https://api.abuseipdb.com/api/v2/check",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Key",
+              "value": "={{ $('AbuseIPDB Credentials').first().json.api_key }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ipAddress",
+              "value": "={{ $json.objects[0].value }}"
+            },
+            {
+              "name": "maxAgeInDays",
+              "value": "90"
+            },
+            {
+              "name": "verbose",
+              "value": ""
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "abuseipdb-enrichment",
+      "name": "AbuseIPDB Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1240, 700],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "abuseipdb-credentials",
+          "name": "AbuseIPDB Credentials"
+        }
+      },
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "url": "http://ip-api.com/json/{{ $json.objects[0].value }}?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,asname,reverse,mobile,proxy,hosting,query",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "whois-geo-enrichment",
+      "name": "WHOIS/Geo Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1240, 800],
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge enrichment data\nconst items = $input.all();\nconst mergedData = {\n  original: null,\n  enrichment: {\n    otx: null,\n    virustotal: null,\n    greynoise: null,\n    shodan: null,\n    abuseipdb: null,\n    geolocation: null\n  }\n};\n\n// Find original data and enrichments\nfor (const item of items) {\n  if (item.json.objects) {\n    mergedData.original = item.json;\n  } else {\n    // Determine enrichment source based on response structure\n    if (item.json.pulse_info !== undefined) {\n      mergedData.enrichment.otx = item.json;\n    } else if (item.json.detected_urls !== undefined || item.json.resolutions !== undefined) {\n      mergedData.enrichment.virustotal = item.json;\n    } else if (item.json.noise !== undefined || item.json.riot !== undefined) {\n      mergedData.enrichment.greynoise = item.json;\n    } else if (item.json.ports !== undefined || item.json.hostnames !== undefined) {\n      mergedData.enrichment.shodan = item.json;\n    } else if (item.json.abuseConfidenceScore !== undefined) {\n      mergedData.enrichment.abuseipdb = item.json;\n    } else if (item.json.country !== undefined && item.json.lat !== undefined) {\n      mergedData.enrichment.geolocation = item.json;\n    }\n  }\n}\n\nreturn [{ json: mergedData }];"
+      },
+      "id": "merge-enrichment",
+      "name": "Merge Enrichment Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1460, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// AI Threat Scoring Algorithm\nconst data = $input.first().json;\nlet threatScore = 0;\nlet confidence = 0;\nlet riskFactors = [];\nlet indicators = [];\n\n// Base score from original indicator confidence\nif (data.original?.objects) {\n  const indicator = data.original.objects.find(obj => obj.type === 'indicator');\n  if (indicator) {\n    confidence = indicator.x_confidence || 50;\n    threatScore = confidence * 0.1; // Base 10% of confidence\n  }\n}\n\n// OTX Intelligence scoring\nif (data.enrichment.otx) {\n  const otx = data.enrichment.otx;\n  if (otx.pulse_info?.count > 0) {\n    threatScore += Math.min(otx.pulse_info.count * 5, 25); // Max 25 points\n    riskFactors.push(`Found in ${otx.pulse_info.count} OTX pulses`);\n    indicators.push('otx_pulses');\n  }\n  if (otx.malware_families?.length > 0) {\n    threatScore += otx.malware_families.length * 10; // 10 points per malware family\n    riskFactors.push(`Associated with malware families: ${otx.malware_families.join(', ')}`);\n    indicators.push('malware_families');\n  }\n}\n\n// VirusTotal scoring\nif (data.enrichment.virustotal) {\n  const vt = data.enrichment.virustotal;\n  if (vt.detected_urls?.length > 0) {\n    const maliciousUrls = vt.detected_urls.filter(url => url.positives > 0).length;\n    threatScore += Math.min(maliciousUrls * 3, 30); // Max 30 points\n    riskFactors.push(`${maliciousUrls} malicious URLs detected`);\n    indicators.push('malicious_urls');\n  }\n  if (vt.detected_downloaded_samples?.length > 0) {\n    const maliciousSamples = vt.detected_downloaded_samples.filter(sample => sample.positives > 0).length;\n    threatScore += Math.min(maliciousSamples * 2, 20); // Max 20 points\n    riskFactors.push(`${maliciousSamples} malicious samples detected`);\n    indicators.push('malicious_samples');\n  }\n}\n\n// GreyNoise scoring\nif (data.enrichment.greynoise) {\n  const gn = data.enrichment.greynoise;\n  if (gn.noise === true) {\n    threatScore += 15;\n    riskFactors.push('Active internet scanner (GreyNoise)');\n    indicators.push('internet_scanner');\n  }\n  if (gn.riot === true) {\n    threatScore -= 10; // Reduce score for legitimate services\n    riskFactors.push('Legitimate service (GreyNoise RIOT)');\n    indicators.push('legitimate_service');\n  }\n  if (gn.classification === 'malicious') {\n    threatScore += 25;\n    riskFactors.push('Classified as malicious by GreyNoise');\n    indicators.push('classified_malicious');\n  }\n}\n\n// Shodan scoring\nif (data.enrichment.shodan) {\n  const shodan = data.enrichment.shodan;\n  if (shodan.ports?.length > 0) {\n    const suspiciousPorts = shodan.ports.filter(port => \n      [22, 23, 3389, 445, 135, 139].includes(port)\n    ).length;\n    threatScore += suspiciousPorts * 3; // 3 points per suspicious port\n    if (suspiciousPorts > 0) {\n      riskFactors.push(`${suspiciousPorts} suspicious ports open`);\n      indicators.push('suspicious_ports');\n    }\n  }\n  if (shodan.vulns?.length > 0) {\n    threatScore += Math.min(shodan.vulns.length * 8, 40); // Max 40 points\n    riskFactors.push(`${shodan.vulns.length} vulnerabilities detected`);\n    indicators.push('vulnerabilities');\n  }\n}\n\n// AbuseIPDB scoring\nif (data.enrichment.abuseipdb) {\n  const abuse = data.enrichment.abuseipdb;\n  if (abuse.abuseConfidenceScore > 0) {\n    threatScore += abuse.abuseConfidenceScore * 0.3; // Up to 30 points for 100% confidence\n    riskFactors.push(`${abuse.abuseConfidenceScore}% abuse confidence score`);\n    indicators.push('abuse_reports');\n  }\n  if (abuse.totalReports > 0) {\n    threatScore += Math.min(abuse.totalReports * 2, 20); // Max 20 points\n    riskFactors.push(`${abuse.totalReports} abuse reports`);\n  }\n}\n\n// Geolocation risk factors\nif (data.enrichment.geolocation) {\n  const geo = data.enrichment.geolocation;\n  const highRiskCountries = ['CN', 'RU', 'KP', 'IR'];\n  if (highRiskCountries.includes(geo.countryCode)) {\n    threatScore += 10;\n    riskFactors.push(`Located in high-risk country: ${geo.country}`);\n    indicators.push('high_risk_geo');\n  }\n  if (geo.proxy === true || geo.hosting === true) {\n    threatScore += 5;\n    riskFactors.push('Proxy/Hosting provider');\n    indicators.push('proxy_hosting');\n  }\n}\n\n// Normalize score to 0-100\nthreatScore = Math.min(Math.max(threatScore, 0), 100);\n\n// Determine threat level\nlet threatLevel = 'LOW';\nif (threatScore >= 70) {\n  threatLevel = 'CRITICAL';\n} else if (threatScore >= 50) {\n  threatLevel = 'HIGH';\n} else if (threatScore >= 30) {\n  threatLevel = 'MEDIUM';\n}\n\nconst scoringResult = {\n  ...data,\n  threat_analysis: {\n    score: Math.round(threatScore),\n    level: threatLevel,\n    confidence: confidence,\n    risk_factors: riskFactors,\n    indicators: indicators,\n    timestamp: new Date().toISOString()\n  }\n};\n\nreturn [{ json: scoringResult }];"
+      },
+      "id": "threat-scoring",
+      "name": "Threat Scoring",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1680, 500]
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "You are a cybersecurity threat intelligence analyst. Analyze the provided threat data and create a comprehensive threat assessment summary. Focus on actionability, context, and risk prioritization."
+            },
+            {
+              "role": "user",
+              "content": "Analyze this threat intelligence data and provide a summary with recommended actions:\n\nThreat Score: {{ $json.threat_analysis.score }}\nThreat Level: {{ $json.threat_analysis.level }}\nIOC Type: {{ $json.original.objects[0].type }}\nIOC Value: {{ $json.original.objects[0].value }}\n\nRisk Factors:\n{{ $json.threat_analysis.risk_factors.join('\\n') }}\n\nEnrichment Data:\n- OTX: {{ JSON.stringify($json.enrichment.otx) }}\n- VirusTotal: {{ JSON.stringify($json.enrichment.virustotal) }}\n- GreyNoise: {{ JSON.stringify($json.enrichment.greynoise) }}\n- Shodan: {{ JSON.stringify($json.enrichment.shodan) }}\n- AbuseIPDB: {{ JSON.stringify($json.enrichment.abuseipdb) }}\n- Geolocation: {{ JSON.stringify($json.enrichment.geolocation) }}\n\nProvide a concise threat assessment with:\n1. Executive Summary\n2. Technical Analysis\n3. Risk Assessment\n4. Recommended Actions\n5. IOCs for blocking/monitoring"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 1000
+        }
+      },
+      "id": "ai-summarization",
+      "name": "AI Threat Summarization",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1900, 500],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI Credentials"
+        }
+      },
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "threat_intelligence"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ioc_type": "={{ $json.original.objects[0].type }}",
+            "ioc_value": "={{ $json.original.objects[0].value }}",
+            "threat_score": "={{ $json.threat_analysis.score }}",
+            "threat_level": "={{ $json.threat_analysis.level }}",
+            "confidence": "={{ $json.threat_analysis.confidence }}",
+            "risk_factors": "={{ JSON.stringify($json.threat_analysis.risk_factors) }}",
+            "indicators": "={{ JSON.stringify($json.threat_analysis.indicators) }}",
+            "enrichment_data": "={{ JSON.stringify($json.enrichment) }}",
+            "ai_summary": "={{ $json.choices[0].message.content }}",
+            "created_at": "={{ new Date().toISOString() }}",
+            "source": "={{ $json.original.objects[0].x_source }}",
+            "raw_data": "={{ JSON.stringify($json.original.objects[0].x_raw_data) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "postgresql-storage",
+      "name": "PostgreSQL Storage",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [2120, 500],
+      "credentials": {
+        "postgres": {
+          "id": "postgresql-credentials",
+          "name": "PostgreSQL Credentials"
+        }
+      },
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "high-threat-condition",
+              "leftValue": "={{ $json.threat_analysis.score }}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "alert-threshold",
+      "name": "Alert Threshold Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2340, 500]
+    },
+    {
+      "parameters": {
+        "channel": "#threat-intel",
+        "text": "🚨 **HIGH THREAT DETECTED** 🚨\n\n**IOC:** `{{ $json.original.objects[0].value }}`\n**Type:** {{ $json.original.objects[0].type }}\n**Threat Level:** {{ $json.threat_analysis.level }}\n**Score:** {{ $json.threat_analysis.score }}/100\n**Source:** {{ $json.original.objects[0].x_source }}\n\n**Risk Factors:**\n{{ $json.threat_analysis.risk_factors.map(factor => `• ${factor}`).join('\\n') }}\n\n**AI Analysis:**\n```\n{{ $json.choices[0].message.content.substring(0, 500) }}...\n```\n\n*Timestamp:* {{ new Date().toISOString() }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": true
+        }
+      },
+      "id": "slack-alert",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [2560, 450],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credentials",
+          "name": "Slack Credentials"
+        }
+      },
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "fromEmail": "threat-intel@company.com",
+        "toEmail": "security-team@company.com",
+        "subject": "🚨 High Threat Alert - {{ $json.original.objects[0].value }}",
+        "message": "High Threat Detection Alert\n\nIOC: {{ $json.original.objects[0].value }}\nType: {{ $json.original.objects[0].type }}\nThreat Level: {{ $json.threat_analysis.level }}\nScore: {{ $json.threat_analysis.score }}/100\nSource: {{ $json.original.objects[0].x_source }}\nTimestamp: {{ new Date().toISOString() }}\n\nRisk Factors:\n{{ $json.threat_analysis.risk_factors.join('\\n') }}\n\nAI Analysis:\n{{ $json.choices[0].message.content }}\n\nThis is an automated alert from the AI-Powered Threat Intelligence System.",
+        "options": {}
+      },
+      "id": "email-alert",
+      "name": "Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2560, 550],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP Credentials"
+        }
+      },
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "// Rate limiting for API calls\nconst RATE_LIMITS = {\n  otx: { requests: 1000, window: 3600 }, // 1000/hour\n  virustotal: { requests: 4, window: 60 }, // 4/minute\n  greynoise: { requests: 1000, window: 86400 }, // 1000/day\n  shodan: { requests: 1, window: 1 }, // 1/second\n  abuseipdb: { requests: 1000, window: 86400 }, // 1000/day\n  openai: { requests: 3, window: 60 } // 3/minute\n};\n\nconst now = Date.now();\nconst service = $node.parameters.service || 'default';\nconst limits = RATE_LIMITS[service];\n\nif (!limits) {\n  return [{ json: { allowed: true, message: 'No rate limit configured' } }];\n}\n\n// Simple in-memory rate limiting (in production, use Redis or database)\nif (!global.rateLimitCounters) {\n  global.rateLimitCounters = {};\n}\n\nif (!global.rateLimitCounters[service]) {\n  global.rateLimitCounters[service] = { count: 0, windowStart: now };\n}\n\nconst counter = global.rateLimitCounters[service];\nconst windowMs = limits.window * 1000;\n\n// Reset counter if window has expired\nif (now - counter.windowStart >= windowMs) {\n  counter.count = 0;\n  counter.windowStart = now;\n}\n\n// Check if limit exceeded\nif (counter.count >= limits.requests) {\n  const resetTime = counter.windowStart + windowMs;\n  const waitTime = Math.ceil((resetTime - now) / 1000);\n  \n  return [{ \n    json: { \n      allowed: false, \n      message: `Rate limit exceeded. Wait ${waitTime} seconds.`,\n      resetTime: new Date(resetTime).toISOString()\n    } \n  }];\n}\n\n// Increment counter and allow request\ncounter.count++;\n\nreturn [{ \n  json: { \n    allowed: true, \n    remaining: limits.requests - counter.count,\n    resetTime: new Date(counter.windowStart + windowMs).toISOString()\n  } \n}];"
+      },
+      "id": "rate-limiter",
+      "name": "Rate Limiter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1020, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Error handling and retry logic\nconst items = $input.all();\nconst errors = [];\nconst successes = [];\n\nfor (const item of items) {\n  if (item.json.error || item.json.message?.includes('error')) {\n    errors.push({\n      node: item.json.node || 'unknown',\n      error: item.json.error || item.json.message,\n      timestamp: new Date().toISOString(),\n      data: item.json\n    });\n  } else {\n    successes.push(item);\n  }\n}\n\n// Log errors for monitoring\nif (errors.length > 0) {\n  console.error('Workflow errors detected:', JSON.stringify(errors, null, 2));\n}\n\n// Return successful items or error summary\nif (successes.length > 0) {\n  return successes;\n} else {\n  return [{ \n    json: { \n      workflow_errors: errors,\n      message: `${errors.length} errors occurred during processing`,\n      timestamp: new Date().toISOString()\n    } \n  }];\n}"
+      },
+      "id": "error-handler",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2780, 500]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "data-normalization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email-trigger": {
+      "main": [
+        [
+          {
+            "node": "data-normalization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "data-normalization": {
+      "main": [
+        [
+          {
+            "node": "deduplication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "deduplication": {
+      "main": [
+        [
+          {
+            "node": "route-by-type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "route-by-type": {
+      "main": [
+        [
+          {
+            "node": "rate-limiter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rate-limiter": {
+      "main": [
+        [
+          {
+            "node": "otx-enrichment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "virustotal-enrichment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "greynoise-enrichment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "shodan-enrichment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "abuseipdb-enrichment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "whois-geo-enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "otx-enrichment": {
+      "main": [
+        [
+          {
+            "node": "merge-enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "virustotal-enrichment": {
+      "main": [
+        [
+          {
+            "node": "merge-enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "greynoise-enrichment": {
+      "main": [
+        [
+          {
+            "node": "merge-enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "shodan-enrichment": {
+      "main": [
+        [
+          {
+            "node": "merge-enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "abuseipdb-enrichment": {
+      "main": [
+        [
+          {
+            "node": "merge-enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "whois-geo-enrichment": {
+      "main": [
+        [
+          {
+            "node": "merge-enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "merge-enrichment": {
+      "main": [
+        [
+          {
+            "node": "threat-scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "threat-scoring": {
+      "main": [
+        [
+          {
+            "node": "ai-summarization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai-summarization": {
+      "main": [
+        [
+          {
+            "node": "postgresql-storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "postgresql-storage": {
+      "main": [
+        [
+          {
+            "node": "alert-threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "alert-threshold": {
+      "main": [
+        [
+          {
+            "node": "slack-alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "email-alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "slack-alert": {
+      "main": [
+        [
+          {
+            "node": "error-handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email-alert": {
+      "main": [
+        [
+          {
+            "node": "error-handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "error-handler"
+  },
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "id": "ai-threat-intelligence-workflow",
+  "tags": [
+    {
+      "id": "threat-intelligence",
+      "name": "Threat Intelligence"
+    },
+    {
+      "id": "security",
+      "name": "Security"
+    },
+    {
+      "id": "ai",
+      "name": "AI"
+    }
+  ]
+}
