@@ -1,0 +1,584 @@
+{
+  "name": "AI Threat Intelligence Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "threat-intel-webhook",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Threat Intel Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "threat-intel-webhook"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute",
+              "minute": 5
+            }
+          ]
+        },
+        "mailbox": "INBOX",
+        "postProcessAction": "markAsRead",
+        "format": "simple",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "forceReconnect": false
+        }
+      },
+      "id": "email-trigger",
+      "name": "Email IOC Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [240, 500],
+      "credentials": {
+        "imap": {
+          "id": "email-credentials",
+          "name": "Threat Intel Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Data normalization and validation\nconst items = $input.all();\nconst normalizedItems = [];\n\nfor (const item of items) {\n  try {\n    let data = item.json;\n    \n    // Handle different input sources\n    if (data.body && typeof data.body === 'string') {\n      try {\n        data = JSON.parse(data.body);\n      } catch {\n        // If not JSON, treat as plain text IOC\n        data = { raw_text: data.body, source: 'webhook' };\n      }\n    }\n    \n    // Extract IOCs from text if needed\n    const iocsFound = {\n      ips: extractIPs(data.raw_text || data.message || ''),\n      domains: extractDomains(data.raw_text || data.message || ''),\n      hashes: extractHashes(data.raw_text || data.message || ''),\n      urls: extractURLs(data.raw_text || data.message || '')\n    };\n    \n    const normalizedData = {\n      id: data.id || $jmespath(item, 'json.id') || generateUUID(),\n      timestamp: new Date().toISOString(),\n      source: data.source || 'unknown',\n      severity: data.severity || 'medium',\n      confidence: data.confidence || 50,\n      tlp: data.tlp || 'WHITE',\n      iocs: {\n        ips: data.ips || iocsFound.ips || [],\n        domains: data.domains || iocsFound.domains || [],\n        hashes: data.hashes || iocsFound.hashes || [],\n        urls: data.urls || iocsFound.urls || []\n      },\n      raw_data: data,\n      processed: false\n    };\n    \n    normalizedItems.push({ json: normalizedData });\n    \n  } catch (error) {\n    console.error('Error normalizing data:', error);\n    // Add error item for monitoring\n    normalizedItems.push({\n      json: {\n        error: true,\n        message: error.message,\n        original_data: item.json,\n        timestamp: new Date().toISOString()\n      }\n    });\n  }\n}\n\n// Helper functions\nfunction extractIPs(text) {\n  const ipRegex = /\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b/g;\n  return text.match(ipRegex) || [];\n}\n\nfunction extractDomains(text) {\n  const domainRegex = /\\b[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\\.[a-zA-Z]{2,}\\b/g;\n  return text.match(domainRegex) || [];\n}\n\nfunction extractHashes(text) {\n  const hashRegex = /\\b[a-fA-F0-9]{32,64}\\b/g;\n  return text.match(hashRegex) || [];\n}\n\nfunction extractURLs(text) {\n  const urlRegex = /https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)/g;\n  return text.match(urlRegex) || [];\n}\n\nfunction generateUUID() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\nreturn normalizedItems;"
+      },
+      "id": "data-normalizer",
+      "name": "Data Normalizer",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM threat_intel WHERE \n  (iocs->'ips' ?| array[{{$json.iocs.ips.map(ip => `'${ip}'`).join(',')}}]) OR \n  (iocs->'domains' ?| array[{{$json.iocs.domains.map(domain => `'${domain}'`).join(',')}}]) OR\n  (iocs->'hashes' ?| array[{{$json.iocs.hashes.map(hash => `'${hash}'`).join(',')}}])\nLIMIT 1",
+        "options": {}
+      },
+      "id": "deduplication-check",
+      "name": "Deduplication Check",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [680, 400],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-credentials",
+          "name": "Threat Intel DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is-new-threat",
+      "name": "Is New Threat?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "chatId": {
+          "__rl": true,
+          "value": "thread_abc123",
+          "mode": "list",
+          "cachedResultName": "Threat Analysis Thread"
+        },
+        "text": "Analyze the following threat intelligence data and provide:\n1. Threat severity assessment (1-10)\n2. Potential attack vectors\n3. Recommended mitigation actions\n4. Confidence level in analysis\n\nThreat Data:\n{{ JSON.stringify($json, null, 2) }}",
+        "additionalFields": {
+          "model": "gpt-4",
+          "maxTokens": 1000,
+          "temperature": 0.3
+        }
+      },
+      "id": "llm-analysis",
+      "name": "LLM Threat Analysis",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [1120, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.virustotal.com/vtapi/v2/ip-address/report",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "virusTotalApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $credentials.virusTotalApi.accessToken }}"
+            },
+            {
+              "name": "ip",
+              "value": "={{ $json.iocs.ips[0] }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 3
+            }
+          },
+          "timeout": 10000,
+          "retry": {
+            "retry": {
+              "retries": 3,
+              "retryOnHttpError": true
+            }
+          }
+        }
+      },
+      "id": "virustotal-check",
+      "name": "VirusTotal Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 500],
+      "credentials": {
+        "virusTotalApi": {
+          "id": "virustotal-credentials",
+          "name": "VirusTotal API"
+        }
+      },
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "url": "https://api.abuseipdb.com/api/v2/check",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Key",
+              "value": "={{ $credentials.httpHeaderAuth.headerValue }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ipAddress",
+              "value": "={{ $json.iocs.ips[0] }}"
+            },
+            {
+              "name": "maxAgeInDays",
+              "value": "90"
+            },
+            {
+              "name": "verbose",
+              "value": ""
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "retry": {
+            "retry": {
+              "retries": 3,
+              "retryOnHttpError": true
+            }
+          }
+        }
+      },
+      "id": "abuseipdb-check",
+      "name": "AbuseIPDB Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 700],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "abuseipdb-credentials",
+          "name": "AbuseIPDB API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Aggregate analysis results\nconst items = $input.all();\nconst originalThreat = items.find(item => item.json.iocs)?.json;\nconst llmAnalysis = items.find(item => item.json.choices)?.json;\nconst vtAnalysis = items.find(item => item.json.response_code !== undefined)?.json;\nconst abuseAnalysis = items.find(item => item.json.data?.abuseConfidencePercentage !== undefined)?.json;\n\nif (!originalThreat) {\n  throw new Error('Original threat data not found');\n}\n\n// Extract LLM insights\nlet llmInsights = {};\nif (llmAnalysis && llmAnalysis.choices && llmAnalysis.choices.length > 0) {\n  const analysis = llmAnalysis.choices[0].message.content;\n  llmInsights = {\n    raw_analysis: analysis,\n    severity_ai: extractSeverity(analysis),\n    confidence_ai: extractConfidence(analysis),\n    mitigation: extractMitigation(analysis)\n  };\n}\n\n// Process VirusTotal results\nlet vtScore = 0;\nlet vtDetections = 0;\nif (vtAnalysis && vtAnalysis.response_code === 1) {\n  vtScore = vtAnalysis.positives || 0;\n  vtDetections = vtAnalysis.total || 0;\n}\n\n// Process AbuseIPDB results\nlet abuseScore = 0;\nif (abuseAnalysis && abuseAnalysis.data) {\n  abuseScore = abuseAnalysis.data.abuseConfidencePercentage || 0;\n}\n\n// Calculate composite threat score\nconst compositeScore = calculateThreatScore(vtScore, vtDetections, abuseScore, llmInsights.severity_ai || 5);\n\n// Determine alert level\nconst alertLevel = getAlertLevel(compositeScore);\n\n// Create enriched threat data\nconst enrichedThreat = {\n  ...originalThreat,\n  processed: true,\n  analysis_timestamp: new Date().toISOString(),\n  threat_score: compositeScore,\n  alert_level: alertLevel,\n  external_analysis: {\n    virustotal: {\n      score: vtScore,\n      total_engines: vtDetections,\n      detection_rate: vtDetections > 0 ? (vtScore / vtDetections) * 100 : 0\n    },\n    abuseipdb: {\n      confidence: abuseScore,\n      category: abuseScore > 75 ? 'high_risk' : abuseScore > 25 ? 'medium_risk' : 'low_risk'\n    },\n    llm_analysis: llmInsights\n  },\n  recommendations: generateRecommendations(alertLevel, compositeScore)\n};\n\n// Helper functions\nfunction extractSeverity(text) {\n  const match = text.match(/severity[:\\s]+(\\d+)/i);\n  return match ? parseInt(match[1]) : 5;\n}\n\nfunction extractConfidence(text) {\n  const match = text.match(/confidence[:\\s]+(\\d+)/i);\n  return match ? parseInt(match[1]) : 50;\n}\n\nfunction extractMitigation(text) {\n  const lines = text.split('\\n');\n  const mitigationIndex = lines.findIndex(line => \n    line.toLowerCase().includes('mitigation') || \n    line.toLowerCase().includes('recommendation')\n  );\n  return mitigationIndex >= 0 ? lines.slice(mitigationIndex + 1, mitigationIndex + 4).join(' ') : 'No specific mitigation provided';\n}\n\nfunction calculateThreatScore(vtScore, vtTotal, abuseScore, aiSeverity) {\n  let score = 0;\n  \n  // VirusTotal component (40% weight)\n  if (vtTotal > 0) {\n    const vtRatio = vtScore / vtTotal;\n    score += vtRatio * 40;\n  }\n  \n  // AbuseIPDB component (30% weight)\n  score += (abuseScore / 100) * 30;\n  \n  // AI analysis component (30% weight)\n  score += (aiSeverity / 10) * 30;\n  \n  return Math.round(score * 10) / 10; // Round to 1 decimal place\n}\n\nfunction getAlertLevel(score) {\n  if (score >= 80) return 'critical';\n  if (score >= 60) return 'high';\n  if (score >= 40) return 'medium';\n  if (score >= 20) return 'low';\n  return 'info';\n}\n\nfunction generateRecommendations(alertLevel, score) {\n  const recommendations = [];\n  \n  if (alertLevel === 'critical') {\n    recommendations.push('Immediate isolation of affected systems');\n    recommendations.push('Activate incident response team');\n    recommendations.push('Block all IOCs at network perimeter');\n  } else if (alertLevel === 'high') {\n    recommendations.push('Enhanced monitoring of IOCs');\n    recommendations.push('Review security controls');\n    recommendations.push('Consider blocking suspicious IOCs');\n  } else if (alertLevel === 'medium') {\n    recommendations.push('Monitor for additional indicators');\n    recommendations.push('Review logs for related activity');\n  } else {\n    recommendations.push('Continue standard monitoring');\n  }\n  \n  return recommendations;\n}\n\nreturn [{ json: enrichedThreat }];"
+      },
+      "id": "threat-aggregator",
+      "name": "Threat Analysis Aggregator",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "threat_intel",
+          "mode": "list",
+          "cachedResultName": "threat_intel"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "timestamp": "={{ $json.timestamp }}",
+            "source": "={{ $json.source }}",
+            "severity": "={{ $json.severity }}",
+            "confidence": "={{ $json.confidence }}",
+            "tlp": "={{ $json.tlp }}",
+            "iocs": "={{ JSON.stringify($json.iocs) }}",
+            "threat_score": "={{ $json.threat_score }}",
+            "alert_level": "={{ $json.alert_level }}",
+            "external_analysis": "={{ JSON.stringify($json.external_analysis) }}",
+            "recommendations": "={{ JSON.stringify($json.recommendations) }}",
+            "processed": "={{ $json.processed }}",
+            "raw_data": "={{ JSON.stringify($json.raw_data) }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "store-threat-data",
+      "name": "Store Threat Data",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [1560, 400],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-credentials",
+          "name": "Threat Intel DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.alert_level }}",
+              "rightValue": "critical",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "caseSensitive": true
+              }
+            },
+            {
+              "leftValue": "={{ $json.alert_level }}",
+              "rightValue": "high",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "caseSensitive": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "should-alert",
+      "name": "Should Send Alert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1780, 400]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "channel": {
+          "__rl": true,
+          "value": "threat-alerts",
+          "mode": "name"
+        },
+        "text": "🚨 **{{ $json.alert_level.toUpperCase() }} THREAT ALERT** 🚨\\n\\n**Threat Score:** {{ $json.threat_score }}/100\\n**Source:** {{ $json.source }}\\n**TLP:** {{ $json.tlp }}\\n\\n**IOCs Detected:**\\n{% if $json.iocs.ips.length > 0 %}• IPs: {{ $json.iocs.ips.join(', ') }}\\n{% endif %}{% if $json.iocs.domains.length > 0 %}• Domains: {{ $json.iocs.domains.join(', ') }}\\n{% endif %}{% if $json.iocs.hashes.length > 0 %}• Hashes: {{ $json.iocs.hashes.slice(0,2).join(', ') }}{{ $json.iocs.hashes.length > 2 ? '...' : '' }}\\n{% endif %}\\n**External Analysis:**\\n• VirusTotal: {{ $json.external_analysis.virustotal.score }}/{{ $json.external_analysis.virustotal.total_engines }} detections\\n• AbuseIPDB: {{ $json.external_analysis.abuseipdb.confidence }}% confidence\\n\\n**Recommendations:**\\n{{ $json.recommendations.map(r => '• ' + r).join('\\n') }}\\n\\n**Timestamp:** {{ $json.analysis_timestamp }}",
+        "otherOptions": {
+          "mrkdwn": true
+        }
+      },
+      "id": "slack-alert",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [2000, 300],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credentials",
+          "name": "Security Team Slack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "threat-intel@company.com",
+        "toEmail": "security-team@company.com",
+        "subject": "[{{ $json.alert_level.toUpperCase() }}] Threat Intelligence Alert - Score {{ $json.threat_score }}",
+        "text": "A new {{ $json.alert_level }} severity threat has been detected.\\n\\nThreat Details:\\n- ID: {{ $json.id }}\\n- Score: {{ $json.threat_score }}/100\\n- Source: {{ $json.source }}\\n- TLP: {{ $json.tlp }}\\n\\nIOCs:\\n- IPs: {{ $json.iocs.ips.join(', ') || 'None' }}\\n- Domains: {{ $json.iocs.domains.join(', ') || 'None' }}\\n- Hashes: {{ $json.iocs.hashes.join(', ') || 'None' }}\\n\\nExternal Analysis:\\n- VirusTotal: {{ $json.external_analysis.virustotal.score }}/{{ $json.external_analysis.virustotal.total_engines }} detections\\n- AbuseIPDB: {{ $json.external_analysis.abuseipdb.confidence }}% confidence\\n\\nAI Analysis Summary:\\n{{ $json.external_analysis.llm_analysis.raw_analysis }}\\n\\nRecommended Actions:\\n{{ $json.recommendations.map((r, i) => (i + 1) + '. ' + r).join('\\n') }}\\n\\nTimestamp: {{ $json.analysis_timestamp }}",
+        "options": {}
+      },
+      "id": "email-alert",
+      "name": "Send Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2000, 500],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "Company SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, threat_id: $json.id, alert_level: $json.alert_level, threat_score: $json.threat_score }, null, 2) }}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2220, 400]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Error handling and logging\nconst items = $input.all();\nconst errors = [];\n\nfor (const item of items) {\n  if (item.json.error) {\n    errors.push({\n      timestamp: new Date().toISOString(),\n      error_type: 'processing_error',\n      message: item.json.message,\n      node_name: item.json.node || 'unknown',\n      data: item.json.original_data\n    });\n  }\n}\n\nif (errors.length > 0) {\n  // Log to database\n  console.error('Workflow errors detected:', JSON.stringify(errors, null, 2));\n  \n  // Create error notification\n  return errors.map(error => ({\n    json: {\n      ...error,\n      notification_type: 'workflow_error',\n      severity: 'medium'\n    }\n  }));\n}\n\nreturn [];"
+      },
+      "id": "error-handler",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1340, 700],
+      "continueOnFail": true,
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Threat Intel Webhook": {
+      "main": [
+        [
+          {
+            "node": "Data Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email IOC Trigger": {
+      "main": [
+        [
+          {
+            "node": "Data Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Normalizer": {
+      "main": [
+        [
+          {
+            "node": "Deduplication Check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplication Check": {
+      "main": [
+        [
+          {
+            "node": "Is New Threat?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is New Threat?": {
+      "main": [
+        [
+          {
+            "node": "LLM Threat Analysis",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "VirusTotal Check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AbuseIPDB Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "LLM Threat Analysis": {
+      "main": [
+        [
+          {
+            "node": "Threat Analysis Aggregator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VirusTotal Check": {
+      "main": [
+        [
+          {
+            "node": "Threat Analysis Aggregator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AbuseIPDB Check": {
+      "main": [
+        [
+          {
+            "node": "Threat Analysis Aggregator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Threat Analysis Aggregator": {
+      "main": [
+        [
+          {
+            "node": "Store Threat Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Threat Data": {
+      "main": [
+        [
+          {
+            "node": "Should Send Alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Send Alert?": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Handler": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": {
+      "id": "error-workflow"
+    }
+  },
+  "staticData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "id": "threat-intel-workflow",
+  "versionId": "1",
+  "triggerCount": 2,
+  "tags": ["threat-intelligence", "security", "automation"]
+}

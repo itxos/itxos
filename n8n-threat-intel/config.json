@@ -1,0 +1,418 @@
+{
+  "environment": "production",
+  "version": "1.0.0",
+  "description": "n8n AI Threat Intelligence System Configuration",
+  
+  "database": {
+    "host": "${DB_HOST:-localhost}",
+    "port": "${DB_PORT:-5432}",
+    "database": "${DB_NAME:-threat_intel}",
+    "username": "${DB_USERNAME:-threat_intel_app}",
+    "password": "${DB_PASSWORD}",
+    "ssl": {
+      "enabled": "${DB_SSL_ENABLED:-true}",
+      "rejectUnauthorized": "${DB_SSL_REJECT_UNAUTHORIZED:-true}",
+      "ca": "${DB_SSL_CA}",
+      "cert": "${DB_SSL_CERT}",
+      "key": "${DB_SSL_KEY}"
+    },
+    "pool": {
+      "min": "${DB_POOL_MIN:-2}",
+      "max": "${DB_POOL_MAX:-10}",
+      "acquireTimeoutMillis": "${DB_ACQUIRE_TIMEOUT:-60000}",
+      "createTimeoutMillis": "${DB_CREATE_TIMEOUT:-30000}",
+      "destroyTimeoutMillis": "${DB_DESTROY_TIMEOUT:-5000}",
+      "idleTimeoutMillis": "${DB_IDLE_TIMEOUT:-30000}",
+      "reapIntervalMillis": "${DB_REAP_INTERVAL:-1000}",
+      "createRetryIntervalMillis": "${DB_CREATE_RETRY_INTERVAL:-200}"
+    }
+  },
+
+  "n8n": {
+    "webhook_url": "${N8N_WEBHOOK_URL:-http://localhost:5678/webhook}",
+    "webhook_path": "/threat-intel-webhook",
+    "basic_auth": {
+      "enabled": "${N8N_BASIC_AUTH_ENABLED:-false}",
+      "username": "${N8N_BASIC_AUTH_USER}",
+      "password": "${N8N_BASIC_AUTH_PASSWORD}"
+    },
+    "execution": {
+      "timeout": "${N8N_EXECUTION_TIMEOUT:-300000}",
+      "save_data": {
+        "on_error": "${N8N_SAVE_DATA_ON_ERROR:-all}",
+        "on_success": "${N8N_SAVE_DATA_ON_SUCCESS:-all}",
+        "manual_executions": "${N8N_SAVE_MANUAL_EXECUTIONS:-true}"
+      }
+    }
+  },
+
+  "api_credentials": {
+    "openai": {
+      "api_key": "${OPENAI_API_KEY}",
+      "organization": "${OPENAI_ORGANIZATION}",
+      "model": "${OPENAI_MODEL:-gpt-4}",
+      "temperature": "${OPENAI_TEMPERATURE:-0.3}",
+      "max_tokens": "${OPENAI_MAX_TOKENS:-1000}",
+      "rate_limit": {
+        "requests_per_minute": "${OPENAI_RATE_LIMIT_RPM:-60}",
+        "tokens_per_minute": "${OPENAI_RATE_LIMIT_TPM:-40000}"
+      }
+    },
+    "virustotal": {
+      "api_key": "${VIRUSTOTAL_API_KEY}",
+      "base_url": "https://www.virustotal.com/vtapi/v2",
+      "rate_limit": {
+        "requests_per_minute": "${VT_RATE_LIMIT_RPM:-4}",
+        "requests_per_day": "${VT_RATE_LIMIT_RPD:-1000}"
+      }
+    },
+    "abuseipdb": {
+      "api_key": "${ABUSEIPDB_API_KEY}",
+      "base_url": "https://api.abuseipdb.com/api/v2",
+      "rate_limit": {
+        "requests_per_day": "${ABUSEIPDB_RATE_LIMIT_RPD:-1000}",
+        "max_age_days": "${ABUSEIPDB_MAX_AGE_DAYS:-90}"
+      }
+    },
+    "slack": {
+      "bot_token": "${SLACK_BOT_TOKEN}",
+      "signing_secret": "${SLACK_SIGNING_SECRET}",
+      "channel": "${SLACK_CHANNEL:-#threat-alerts}",
+      "rate_limit": {
+        "messages_per_minute": "${SLACK_RATE_LIMIT_MPM:-1}"
+      }
+    },
+    "smtp": {
+      "host": "${SMTP_HOST}",
+      "port": "${SMTP_PORT:-587}",
+      "secure": "${SMTP_SECURE:-false}",
+      "auth": {
+        "user": "${SMTP_USER}",
+        "pass": "${SMTP_PASSWORD}"
+      },
+      "from_email": "${SMTP_FROM_EMAIL:-threat-intel@company.com}",
+      "to_emails": [
+        "${SECURITY_TEAM_EMAIL:-security-team@company.com}"
+      ]
+    },
+    "email_imap": {
+      "host": "${IMAP_HOST}",
+      "port": "${IMAP_PORT:-993}",
+      "secure": "${IMAP_SECURE:-true}",
+      "auth": {
+        "user": "${IMAP_USER}",
+        "pass": "${IMAP_PASSWORD}"
+      },
+      "mailbox": "${IMAP_MAILBOX:-INBOX}",
+      "poll_interval": "${IMAP_POLL_INTERVAL:-300}"
+    }
+  },
+
+  "rate_limiting": {
+    "global": {
+      "enabled": true,
+      "window_ms": 60000,
+      "max_requests": 100,
+      "message": "Too many requests, please try again later"
+    },
+    "per_service": {
+      "virustotal": {
+        "requests_per_minute": 4,
+        "daily_limit": 1000,
+        "burst_limit": 1,
+        "backoff_strategy": "exponential",
+        "max_retries": 3,
+        "retry_delay_ms": 15000
+      },
+      "abuseipdb": {
+        "requests_per_minute": 60,
+        "daily_limit": 1000,
+        "burst_limit": 5,
+        "backoff_strategy": "linear",
+        "max_retries": 2,
+        "retry_delay_ms": 1000
+      },
+      "openai": {
+        "requests_per_minute": 60,
+        "tokens_per_minute": 40000,
+        "burst_limit": 10,
+        "backoff_strategy": "exponential",
+        "max_retries": 3,
+        "retry_delay_ms": 1000
+      },
+      "slack": {
+        "messages_per_minute": 1,
+        "burst_limit": 3,
+        "backoff_strategy": "linear",
+        "max_retries": 2,
+        "retry_delay_ms": 60000
+      }
+    }
+  },
+
+  "error_handling": {
+    "global": {
+      "max_retries": 3,
+      "retry_delay_ms": 1000,
+      "exponential_backoff": true,
+      "log_all_errors": true,
+      "alert_on_critical": true
+    },
+    "specific_errors": {
+      "network_timeout": {
+        "max_retries": 5,
+        "retry_delay_ms": 2000,
+        "exponential_backoff": true,
+        "alert_threshold": 10
+      },
+      "api_rate_limit": {
+        "max_retries": 3,
+        "retry_delay_ms": 60000,
+        "exponential_backoff": false,
+        "alert_threshold": 5
+      },
+      "database_connection": {
+        "max_retries": 5,
+        "retry_delay_ms": 5000,
+        "exponential_backoff": true,
+        "alert_threshold": 3
+      },
+      "parsing_error": {
+        "max_retries": 1,
+        "retry_delay_ms": 0,
+        "exponential_backoff": false,
+        "alert_threshold": 50
+      }
+    }
+  },
+
+  "data_retention": {
+    "threat_data": {
+      "default_retention_days": 365,
+      "critical_retention_days": 1095,
+      "high_retention_days": 730,
+      "medium_retention_days": 365,
+      "low_retention_days": 90,
+      "info_retention_days": 30
+    },
+    "system_metrics": {
+      "retention_days": 90,
+      "aggregation_intervals": ["1h", "1d", "1w"]
+    },
+    "error_logs": {
+      "unresolved_retention_days": 365,
+      "resolved_retention_days": 30
+    },
+    "alert_history": {
+      "retention_days": 180
+    }
+  },
+
+  "alerting": {
+    "thresholds": {
+      "critical": {
+        "threat_score_min": 80,
+        "immediate_notification": true,
+        "escalation_minutes": 15,
+        "max_alerts_per_hour": 10
+      },
+      "high": {
+        "threat_score_min": 60,
+        "immediate_notification": true,
+        "escalation_minutes": 60,
+        "max_alerts_per_hour": 20
+      },
+      "medium": {
+        "threat_score_min": 40,
+        "immediate_notification": false,
+        "batch_notification_minutes": 30,
+        "max_alerts_per_hour": 50
+      },
+      "low": {
+        "threat_score_min": 20,
+        "immediate_notification": false,
+        "batch_notification_minutes": 120,
+        "max_alerts_per_hour": 100
+      }
+    },
+    "notification_channels": {
+      "critical": ["slack", "email", "webhook"],
+      "high": ["slack", "email"],
+      "medium": ["slack"],
+      "low": ["email"]
+    },
+    "suppression": {
+      "enabled": true,
+      "duplicate_window_minutes": 60,
+      "similar_threat_window_minutes": 30,
+      "max_similar_alerts": 3
+    }
+  },
+
+  "monitoring": {
+    "health_checks": {
+      "enabled": true,
+      "interval_seconds": 30,
+      "timeout_ms": 5000,
+      "endpoints": [
+        {
+          "name": "database",
+          "type": "postgres",
+          "critical": true
+        },
+        {
+          "name": "virustotal_api",
+          "type": "http",
+          "url": "https://www.virustotal.com/vtapi/v2/ip-address/report?apikey=${VIRUSTOTAL_API_KEY}&ip=8.8.8.8",
+          "critical": false
+        },
+        {
+          "name": "openai_api",
+          "type": "http",
+          "url": "https://api.openai.com/v1/models",
+          "critical": false
+        }
+      ]
+    },
+    "metrics": {
+      "enabled": true,
+      "collection_interval_seconds": 60,
+      "retention_hours": 168,
+      "export_prometheus": "${PROMETHEUS_ENABLED:-false}",
+      "prometheus_port": "${PROMETHEUS_PORT:-9090}"
+    },
+    "logging": {
+      "level": "${LOG_LEVEL:-info}",
+      "format": "${LOG_FORMAT:-json}",
+      "output": "${LOG_OUTPUT:-console}",
+      "file_path": "${LOG_FILE_PATH:-/var/log/threat-intel.log}",
+      "rotate_size": "${LOG_ROTATE_SIZE:-100MB}",
+      "rotate_files": "${LOG_ROTATE_FILES:-5}"
+    }
+  },
+
+  "security": {
+    "encryption": {
+      "at_rest": {
+        "enabled": true,
+        "algorithm": "AES-256-GCM",
+        "key_rotation_days": 90
+      },
+      "in_transit": {
+        "enabled": true,
+        "tls_version": "1.2",
+        "cipher_suites": ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"]
+      }
+    },
+    "authentication": {
+      "api_keys": {
+        "enabled": true,
+        "header_name": "X-API-Key",
+        "required": true
+      },
+      "ip_whitelist": {
+        "enabled": "${IP_WHITELIST_ENABLED:-false}",
+        "addresses": "${IP_WHITELIST:-127.0.0.1}".split(',')
+      }
+    },
+    "data_privacy": {
+      "pii_detection": {
+        "enabled": true,
+        "mask_in_logs": true,
+        "alert_on_detection": true
+      },
+      "data_classification": {
+        "default_tlp": "WHITE",
+        "auto_classify": true,
+        "classification_rules": [
+          {
+            "pattern": "classified|secret|confidential",
+            "tlp": "RED"
+          },
+          {
+            "pattern": "internal|proprietary",
+            "tlp": "AMBER"
+          }
+        ]
+      }
+    }
+  },
+
+  "backup": {
+    "database": {
+      "enabled": "${BACKUP_ENABLED:-true}",
+      "schedule": "${BACKUP_SCHEDULE:-0 2 * * *}",
+      "retention_days": "${BACKUP_RETENTION_DAYS:-30}",
+      "storage": {
+        "type": "${BACKUP_STORAGE_TYPE:-s3}",
+        "bucket": "${BACKUP_S3_BUCKET}",
+        "region": "${BACKUP_S3_REGION}",
+        "access_key": "${BACKUP_S3_ACCESS_KEY}",
+        "secret_key": "${BACKUP_S3_SECRET_KEY}"
+      }
+    },
+    "configuration": {
+      "enabled": true,
+      "include_secrets": false,
+      "schedule": "0 1 * * *"
+    }
+  },
+
+  "integration": {
+    "siem": {
+      "enabled": "${SIEM_INTEGRATION_ENABLED:-false}",
+      "type": "${SIEM_TYPE:-splunk}",
+      "endpoint": "${SIEM_ENDPOINT}",
+      "token": "${SIEM_TOKEN}",
+      "index": "${SIEM_INDEX:-threat_intel}",
+      "batch_size": "${SIEM_BATCH_SIZE:-100}",
+      "flush_interval_seconds": "${SIEM_FLUSH_INTERVAL:-60}"
+    },
+    "soar": {
+      "enabled": "${SOAR_INTEGRATION_ENABLED:-false}",
+      "platform": "${SOAR_PLATFORM:-phantom}",
+      "endpoint": "${SOAR_ENDPOINT}",
+      "token": "${SOAR_TOKEN}",
+      "playbook_mapping": {
+        "critical": "${SOAR_CRITICAL_PLAYBOOK}",
+        "high": "${SOAR_HIGH_PLAYBOOK}",
+        "medium": "${SOAR_MEDIUM_PLAYBOOK}"
+      }
+    },
+    "ticketing": {
+      "enabled": "${TICKETING_ENABLED:-false}",
+      "system": "${TICKETING_SYSTEM:-jira}",
+      "endpoint": "${TICKETING_ENDPOINT}",
+      "username": "${TICKETING_USERNAME}",
+      "password": "${TICKETING_PASSWORD}",
+      "project": "${TICKETING_PROJECT}",
+      "auto_create": {
+        "critical": true,
+        "high": true,
+        "medium": false,
+        "low": false
+      }
+    }
+  },
+
+  "performance": {
+    "caching": {
+      "enabled": true,
+      "ttl_seconds": 300,
+      "max_size": 1000,
+      "cache_ioc_reputation": true,
+      "cache_api_responses": true
+    },
+    "parallel_processing": {
+      "enabled": true,
+      "max_concurrent_executions": "${MAX_CONCURRENT_EXECUTIONS:-5}",
+      "queue_limit": "${QUEUE_LIMIT:-100}"
+    },
+    "database_optimization": {
+      "connection_pooling": true,
+      "prepared_statements": true,
+      "bulk_operations": true,
+      "batch_size": 100
+    }
+  }
+}
