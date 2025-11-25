@@ -50,6 +50,7 @@ We design and deploy custom data platforms tailored to your business.
 
 
 ### Network
+[![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?logo=aws&logoColor=white)](#)
 <div>
      <a href="https://github.com/itxos/zeekproject.git"><img src="https://img.shields.io/badge/-Wireshark-1679A7?&style=for-the-badge&logo=Wireshark&logoColor=white"></a>
     <img src="https://img.shields.io/badge/-Suricata-EF3B2D?&style=for-the-badge&logo=Suricata&logoColor=white" />
