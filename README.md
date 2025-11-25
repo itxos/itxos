@@ -33,19 +33,18 @@ We design and deploy custom data platforms tailored to your business.
 🧠 GRC Risk Lab – Cyber risk scoring model for compliance-driven industries.<br>
 
 
-My journey in computer science has led me to develop a passion for cybersecurity, and I am now eager to transition into this field, specifically aiming to join a Security Operations Center (SOC) as an Analyst.
+
 
 ## Skills
 
 
 | Skill                                         | Associated Project         |
 |-----------------------------------------------|----------------------------|
-| SIEM Implementation and Log Analysis          | <a href="https://google.com">Detection Lab</a>|
-| Network PCAP malware analysis | <a href="https://github.com/itxos/zeekproject.git">Zeek Lab</a>|
-| Python scripting for Cybersecurity         | SOC Automation Lab|
-| AWS cloud security      | Cloud Security AWS|
-| Azure cloud security                  | Cloud security Azure|
-| Cyber risk analysis | GRC Lab|
+| Data Engineering       | <a href="https://google.com">Detection Lab</a>|
+| Cloud Platforms| <a href="https://github.com/itxos/zeekproject.git">Zeek Lab</a>|
+| Python scripting         | SOC Automation Lab|
+| Dashboards:      | Cloud Security AWS|
+
 
 ## Tools
 
@@ -72,15 +71,7 @@ My journey in computer science has led me to develop a passion for cybersecurity
     <img src="https://img.shields.io/badge/-Elastic-005571?&style=for-the-badge&logo=Elastic&logoColor=white" />
 </div>
 
-## Certifications
 
-<div>
-<img src="https://img.shields.io/badge/-Security%2B-FF0000?&style=for-the-badge&logo=CompTIA&logoColor=white" />
-<img src="https://img.shields.io/badge/-Network%2B-007ACC?&style=for-the-badge&logo=CompTIA&logoColor=white" />
-<img src="https://img.shields.io/badge/-A%2B-4D4D4D?&style=for-the-badge&logo=CompTIA&logoColor=white" />
-<img src="https://img.shields.io/badge/-CDSA-006400?&style=for-the-badge&logoColor=white" />
-<img src="https://img.shields.io/badge/-CCD-000080?&style=for-the-badge&logoColor=white" />
-</div>
 
 ## Projects
 - Detection Lab
