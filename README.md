@@ -3,9 +3,34 @@
 
 
 
-I have a profound interest in technology and a dedication to solving complex problems.
+I help real estate and retail businesses turn messy, fragmented data into crystal-clear insights — securely and at scale.
+From pipelines to dashboards, I build smart data infrastructure that just works — whether you're tracking customer behavior, optimizing assets, or managing risk.
 
-## Objective
+🚀 Let’s build your competitive edge with better data.
+
+## 🔎 Our Mission
+
+At ITXOS, we bridge the gap between raw data and real-world decisions.
+We empower property managers, brokers, retailers, and analysts with the tools to see more, do more, and risk less — with cloud-native, secure data workflows.
+
+## 💼 What We Do
+
+We design and deploy custom data platforms tailored to your business.
+
+✅ Real-Time Analytics – See what’s happening across properties or stores, now.
+✅ Cloud Data Pipelines – Automated, scalable pipelines using AWS, Azure, or hybrid systems.
+✅ Secure Data Infrastructure – SOC-ready environments and cybersecurity best practices baked in.
+✅ Retail Intelligence – Track sales, behavior, and trends with precision.
+✅ Property Insights – Monitor occupancy, pricing, and performance at scale.
+✅ Custom Dashboards – Actionable visuals, not just spreadsheets.
+
+
+## 🔬 Featured Labs & Projects
+
+🛡️ SOC Automation Lab – Built a fully automated log detection and alert system using Python + ELK.
+📊 Retail Data Insights Dashboard – Real-time analytics dashboard from raw transactional data.
+🌐 Cloud Security Lab (AWS & Azure) – Simulated cloud environments with risk scoring + policy enforcement.
+🧠 GRC Risk Lab – Cyber risk scoring model for compliance-driven industries.
 
 
 My journey in computer science has led me to develop a passion for cybersecurity, and I am now eager to transition into this field, specifically aiming to join a Security Operations Center (SOC) as an Analyst.
