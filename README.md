@@ -49,13 +49,12 @@ We design and deploy custom data platforms tailored to your business.
 ## Tools
 
 
-### Network
-[![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?logo=aws&logoColor=white)](#)
+### Cloud Storage
+
 <div>
-     <a href="https://github.com/itxos/zeekproject.git"><img src="https://img.shields.io/badge/-Wireshark-1679A7?&style=for-the-badge&logo=Wireshark&logoColor=white"></a>
-    <img src="https://img.shields.io/badge/-Suricata-EF3B2D?&style=for-the-badge&logo=Suricata&logoColor=white" />
-    <a href="https://github.com/itxos/zeekproject.git"><img src="https://img.shields.io/badge/-Zeek-777BB4?&style=for-the-badge&logo=Zeek&logoColor=white"> </a>
-     <IMG SRC="https://img.shields.io/badge/AIRFLOW-red?style=for-the-badge&logo=airbyte">
+    [![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?logo=aws&logoColor=white)](#)
+    [![Google Cloud](https://img.shields.io/badge/Google%20Cloud-%234285F4.svg?logo=google-cloud&logoColor=white)](#)
+    [![Microsoft Azure](https://custom-icon-badges.demolab.com/badge/Microsoft%20Azure-0089D6?logo=msazure&logoColor=white)](#)
 
 </div>
 
