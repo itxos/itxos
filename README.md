@@ -17,20 +17,20 @@ We empower property managers, brokers, retailers, and analysts with the tools to
 
 We design and deploy custom data platforms tailored to your business.
 
-✅ Real-Time Analytics – See what’s happening across properties or stores, now.
-✅ Cloud Data Pipelines – Automated, scalable pipelines using AWS, Azure, or hybrid systems.
-✅ Secure Data Infrastructure – SOC-ready environments and cybersecurity best practices baked in.
-✅ Retail Intelligence – Track sales, behavior, and trends with precision.
-✅ Property Insights – Monitor occupancy, pricing, and performance at scale.
+✅ Real-Time Analytics – See what’s happening across properties or stores, now.<br>
+✅ Cloud Data Pipelines – Automated, scalable pipelines using AWS, Azure, or hybrid systems.<br>
+✅ Secure Data Infrastructure – SOC-ready environments and cybersecurity best practices baked in.<br>
+✅ Retail Intelligence – Track sales, behavior, and trends with precision.<br>
+✅ Property Insights – Monitor occupancy, pricing, and performance at scale.<br>
 ✅ Custom Dashboards – Actionable visuals, not just spreadsheets.
 
 
 ## 🔬 Featured Labs & Projects
 
-🛡️ SOC Automation Lab – Built a fully automated log detection and alert system using Python + ELK.
-📊 Retail Data Insights Dashboard – Real-time analytics dashboard from raw transactional data.
-🌐 Cloud Security Lab (AWS & Azure) – Simulated cloud environments with risk scoring + policy enforcement.
-🧠 GRC Risk Lab – Cyber risk scoring model for compliance-driven industries.
+🛡️ SOC Automation Lab – Built a fully automated log detection and alert system using Python + ELK.<br>
+📊 Retail Data Insights Dashboard – Real-time analytics dashboard from raw transactional data.<br>
+🌐 Cloud Security Lab (AWS & Azure) – Simulated cloud environments with risk scoring + policy enforcement.<br>
+🧠 GRC Risk Lab – Cyber risk scoring model for compliance-driven industries.<br>
 
 
 My journey in computer science has led me to develop a passion for cybersecurity, and I am now eager to transition into this field, specifically aiming to join a Security Operations Center (SOC) as an Analyst.
