@@ -53,28 +53,17 @@ We design and deploy custom data platforms tailored to your business.
   [![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?logo=aws&logoColor=white)](#)
     [![Google Cloud](https://img.shields.io/badge/Google%20Cloud-%234285F4.svg?logo=google-cloud&logoColor=white)](#)
     [![Microsoft Azure](https://custom-icon-badges.demolab.com/badge/Microsoft%20Azure-0089D6?logo=msazure&logoColor=white)](#)
-<div>
-    <img src="[![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?logo=aws&logoColor=white)](#)"/>
-    
 
+
+### Tools
+<div>
+    <img src="https://img.shields.io/badge/Ansible-script-orange?style=for-the-badge&logo=ansible" />
+    <img src="https://img.shields.io/badge/terraform-script-blue?style=for-the-badge&logo=terraform" />
+    <img src="https://img.shields.io/badge/python-green?style=for-the-badge&logo=python"/>
 </div>
 
-### Endpoint
-<div>
-    <img src="https://img.shields.io/badge/Ansible-high-orange?style=for-the-badge&logo=ansible" />
-    <img src="https://img.shields.io/badge/-Velociraptor-4B275F?&style=for-the-badge&logo=Velociraptor&logoColor=white" />
-    <img src="https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge"/>
-</div>
-
-### SIEM
-<div>
-    <img src="https://img.shields.io/badge/-Microsoft_Sentinel-0078D4?&style=for-the-badge&logo=Microsoft&logoColor=white" />
-    <img src="https://img.shields.io/badge/-Splunk-000000?&style=for-the-badge&logo=Splunk&logoColor=white" />
-    <img src="https://img.shields.io/badge/-Elastic-005571?&style=for-the-badge&logo=Elastic&logoColor=white" />
-</div>
 
 
 
 ## Projects
-- Detection Lab
-- SOC Automation Project
+
