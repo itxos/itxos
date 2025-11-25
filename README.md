@@ -1,35 +1,49 @@
-# Hello, I'm Kurt
+# 👋  Hi, I'm Kurt
 <a href="https://linkedin.com"><img src="https://img.shields.io/badge/-LinkedIn-0072b1?&style=for-the-badge&logo=linkedin&logoColor=white" /></a>
 
 
 
-I help real estate and retail businesses turn messy, fragmented data into crystal-clear insights — securely and at scale.
-From pipelines to dashboards, I build smart data infrastructure that just works — whether you're tracking customer behavior, optimizing assets, or managing risk.
+CTI Engineer for the Frontlines of Manufacturing Defense
+I help Managed Security Providers and vCISOs turn fragmented cyber signals into strategic advantage.
+Whether you’re defending OT assets, securing industrial networks, or automating compliance, I design CTI workflows that just work — fast, scalable, and secure.
 
 🚀 Let’s build your competitive edge with better data.
 
 ## 🔎 Our Mission
 
-At ITXOS, we bridge the gap between raw data and real-world decisions.
-We empower property managers, brokers, retailers, and analysts with the tools to see more, do more, and risk less — with cloud-native, secure data workflows.
+Turn raw threat data into decisive action — for the defenders of critical industry.
+At ITXOS, we build custom cyber threat intelligence pipelines and cloud-first detection platforms for those responsible for securing manufacturing at scale.
+The mission? Faster decisions. Fewer breaches. Zero noise.
 
-## 💼 What We Do
 
-We design and deploy custom data platforms tailored to your business.
+## 💼 What We Build for CTI Ops
 
-✅ Real-Time Analytics – See what’s happening across properties or stores, now.<br>
-✅ Cloud Data Pipelines – Automated, scalable pipelines using AWS, Azure, or hybrid systems.<br>
-✅ Secure Data Infrastructure – SOC-ready environments and cybersecurity best practices baked in.<br>
-✅ Retail Intelligence – Track sales, behavior, and trends with precision.<br>
-✅ Property Insights – Monitor occupancy, pricing, and performance at scale.<br>
-✅ Custom Dashboards – Actionable visuals, not just spreadsheets.
+Tailored cyber data infrastructure built with real-world defense in mind.
+
+✅ Threat Signal Engineering – Clean, normalize, and enrich indicators from logs, sensors, and endpoints
+
+✅ Cloud-native CTI Pipelines – Scalable collection and automation using AWS, Azure & hybrid stacks
+
+✅ Manufacturing-Aware Dashboards – Real-time OT/IT visibility with zero clutter
+
+✅ SOC-Ready Integrations – Detection rules, playbooks, and alerting flows built to plug in fast
+
+✅ Risk-Aware Scoring Models – Prioritize the vulnerabilities that matter
+
+✅ Compliance Intelligence – Auto-map findings to frameworks like NIST, ISO 27001, and CMMC
+
 
 
 ## 🔬 Featured Labs & Projects
 
-🛡️ SOC Automation Lab – Built a fully automated log detection and alert system using Python + ELK.<br>
-📊 Retail Data Insights Dashboard – Real-time analytics dashboard from raw transactional data.<br>
-🌐 Cloud Security Lab (AWS & Azure) – Simulated cloud environments with risk scoring + policy enforcement.<br>
+Where ideas become field-tested CTI solutions for defenders in manufacturing:
+
+🛡️ SOC Automation for OT – Python + ELK stack for autonomous log detection in mixed IT/OT environments
+
+🌐 Simulated Cloud Attacks Lab – Threat modeling in AWS & Azure with policy enforcement
+
+🧠 Industrial Risk Scoring Engine – Map threats to asset-criticality across production lines
+
 🧠 GRC Risk Lab – Cyber risk scoring model for compliance-driven industries.<br>
 
 
@@ -38,15 +52,31 @@ We design and deploy custom data platforms tailored to your business.
 ## Skills
 
 
-| Skill                                         | Associated Project         |
-|-----------------------------------------------|----------------------------|
-| Data Engineering       | <a href="https://google.com">Detection Lab</a>|
-| Cloud Platforms| <a href="https://github.com/itxos/zeekproject.git">Zeek Lab</a>|
-| Python scripting         | SOC Automation Lab|
-| Dashboards:      | Cloud Security AWS|
+| Skill | Application |
+|---|---|
+| Cyber Threat Intelligence (CTI) | Tailored threat feeds, IOCs, and alert logic for industrial systems |
+| Cloud Engineering | Securing AWS & Azure for CTI pipeline workloads |
+| Python Scripting | Automating intel enrichment, normalization, and response |
+| Security Visualization | Dashboards that blend intel, context, and alerts in one pane |
 
 
-## Tools
+## 🔧 Tools We Use
+From raw packet to alert:
+
+🛠️ Python — Scripting automations, parsing logs, enriching indicators
+
+☁️ AWS / Azure — Scalable CTI pipelines + secure cloud infra
+
+📈 ELK Stack — Log analytics, dashboards, and detection logic
+
+🕵️‍♂️ Zeek & Suricata — Deep packet inspection & threat detection
+
+🔐 MISP / Sigma / STIX — Intel sharing, normalization, and alerting
+
+
+### 🚀 Ready to Transform Your Threat Intel Workflow?
+If you're an MSP or vCISO protecting manufacturing infrastructure, let's design a CTI system that fits like a glove.
+→ Book a walkthrough, get access to labs, and start building smarter security.
 
 
 ### Cloud Storage
@@ -63,7 +93,4 @@ We design and deploy custom data platforms tailored to your business.
 </div>
 
 
-
-
-## Projects
 
