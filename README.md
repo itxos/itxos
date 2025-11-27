@@ -3,35 +3,28 @@
 
 
 
-CTI Engineer for the Frontlines of Manufacturing Defense
-I help Managed Security Providers and vCISOs turn fragmented cyber signals into strategic advantage.
-Whether you’re defending OT assets, securing industrial networks, or automating compliance, I design CTI workflows that just work — fast, scalable, and secure.
+I help real estate and retail businesses turn messy, fragmented data into crystal-clear insights — securely and at scale.
+From pipelines to dashboards, I build smart data infrastructure that just works — whether you're tracking customer behavior, optimizing assets, or managing risk.
+
 
 🚀 Let’s build your competitive edge with better data.
 
 ## 🔎 Our Mission
 
-Turn raw threat data into decisive action — for the defenders of critical industry.
-At ITXOS, we build custom cyber threat intelligence pipelines and cloud-first detection platforms for those responsible for securing manufacturing at scale.
-The mission? Faster decisions. Fewer breaches. Zero noise.
+At ITXOS, we bridge the gap between raw data and real-world decisions.
+We empower property managers, brokers, retailers, and analysts with the tools to see more, do more, and risk less — with cloud-native, secure data workflows.
 
 
 ## 💼 What We Build for CTI Ops
 
-Tailored cyber data infrastructure built with real-world defense in mind.
+We design and deploy custom data platforms tailored to your business.
 
-✅ Threat Signal Engineering – Clean, normalize, and enrich indicators from logs, sensors, and endpoints
-
-✅ Cloud-native CTI Pipelines – Scalable collection and automation using AWS, Azure & hybrid stacks
-
-✅ Manufacturing-Aware Dashboards – Real-time OT/IT visibility with zero clutter
-
-✅ SOC-Ready Integrations – Detection rules, playbooks, and alerting flows built to plug in fast
-
-✅ Risk-Aware Scoring Models – Prioritize the vulnerabilities that matter
-
-✅ Compliance Intelligence – Auto-map findings to frameworks like NIST, ISO 27001, and CMMC
-
+✅ Real-Time Analytics – See what’s happening across properties or stores, now.<br>
+✅ Cloud Data Pipelines – Automated, scalable pipelines using AWS, Azure, or hybrid systems.<br>
+✅ Secure Data Infrastructure – SOC-ready environments and cybersecurity best practices baked in.<br>
+✅ Retail Intelligence – Track sales, behavior, and trends with precision.<br>
+✅ Property Insights – Monitor occupancy, pricing, and performance at scale.<br>
+✅ Custom Dashboards – Actionable visuals, not just spreadsheets.<br>
 
 
 ## 🔬 Featured Labs & Projects
@@ -61,23 +54,24 @@ Where ideas become field-tested CTI solutions for defenders in manufacturing:
 
 
 ## 🔧 Tools We Use
-From raw packet to alert:
 
-🛠️ Python — Scripting automations, parsing logs, enriching indicators
-
-☁️ AWS / Azure — Scalable CTI pipelines + secure cloud infra
-
-📈 ELK Stack — Log analytics, dashboards, and detection logic
-
-🕵️‍♂️ Zeek & Suricata — Deep packet inspection & threat detection
-
-🔐 MISP / Sigma / STIX — Intel sharing, normalization, and alerting
+Data Engineering: Apache Airflow · Spark · dbt · SQL · Python<br>
+Security & Monitoring: ELK Stack · Zeek · Suricata · AWS CloudWatch · Azure Defender<br>
+Cloud Platforms: AWS · Azure · GCP<br>
+Dashboards: Metabase · Power BI · Grafana<br>
 
 
-### 🚀 Ready to Transform Your Threat Intel Workflow?
-If you're an MSP or vCISO protecting manufacturing infrastructure, let's design a CTI system that fits like a glove.
-→ Book a walkthrough, get access to labs, and start building smarter security.
 
+
+
+### 🚀 Let’s Work Together
+
+Whether you're managing 50 storefronts or 500 units, your data is full of untapped potential.
+
+Want to talk about your data challenges? I offer free 30-minute consultations for new clients.
+
+👉 Book a call
+ or email me directly
 
 ### Cloud Storage
   [![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?logo=aws&logoColor=white)](#)
