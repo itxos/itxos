@@ -75,19 +75,19 @@ Dashboards: Metabase · Power BI · Grafana<br>
 
 
 
-### 🚀 Let’s Work Together
+## 🚀 Let’s Work Together
 
 
 👉 Book a call
  or email me directly
 
-### Cloud Storage
+## Cloud Storage
   [![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?logo=aws&logoColor=white)](#)
     [![Google Cloud](https://img.shields.io/badge/Google%20Cloud-%234285F4.svg?logo=google-cloud&logoColor=white)](#)
     [![Microsoft Azure](https://custom-icon-badges.demolab.com/badge/Microsoft%20Azure-0089D6?logo=msazure&logoColor=white)](#)
 
 
-### Tools
+## Tools
 <div>
     <img src="https://img.shields.io/badge/Ansible-script-orange?style=for-the-badge&logo=ansible" />
     <img src="https://img.shields.io/badge/terraform-script-blue?style=for-the-badge&logo=terraform" />
