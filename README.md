@@ -1,8 +1,8 @@
 # 👋 Hi, I'm Kurt
 
-Junior data engineer building pipelines on my own infrastructure. I like turning messy API data into clean, tested, trustworthy analytics, and I'm especially interested in aviation data.
+Data Security engineer building pipelines on my own infrastructure. I like turning messy API data into clean, tested, trustworthy analytics, and I'm especially interested in aviation data.
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](YOUR_LINKEDIN_URL)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kurtmccleansr/?isSelfProfile=true)
 
 ## 🚀 Featured project
 
@@ -26,6 +26,6 @@ Junior data engineer building pipelines on my own infrastructure. I like turning
 
 ## 📫 Get in touch
 
-Best way to reach me is [LinkedIn](YOUR_LINKEDIN_URL).
+Best way to reach me is [LinkedIn](https://www.linkedin.com/in/kurtmccleansr/?isSelfProfile=true).
 <a href="https://linkedin.com"><img src="https://img.shields.io/badge/-LinkedIn-0072b1?&style=for-the-badge&logo=linkedin&logoColor=white" /></a>
 
