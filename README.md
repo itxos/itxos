@@ -21,7 +21,7 @@ Data Security engineer building pipelines on my own infrastructure. I like turni
 ## 🔭 Currently
 
 - Building my next project: [a real-time streaming pipeline, update once decided]
-- Learning: [Kafka, Spark, Iceberg, or whatever you're studying]
+- Learning: [Kafka, Spark, Iceberg]
 - Self-hosting everything on a Proxmox homelab
 
 ## 📫 Get in touch
