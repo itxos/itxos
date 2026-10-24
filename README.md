@@ -2,7 +2,7 @@
 
 Junior data engineer building pipelines on my own infrastructure. I like turning messy public data into clean, tested, trustworthy analytics, with a particular interest in aviation and in construction and insurance risk.
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)]([YOUR_LINKEDIN_URL](https://www.linkedin.com/in/kurtmccleansr/))
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)][(https://www.linkedin.com/in/kurtmccleansr/)]
 
 ## 🚀 Projects
 
@@ -32,6 +32,6 @@ Both run on a self-hosted Proxmox VM with Docker Compose, Airflow, PostgreSQL, d
 
 
 
-Best way to reach me is [LinkedIn](https://www.linkedin.com/in/kurtmccleansr/?isSelfProfile=true).
-<a href="https://linkedin.com"><img src="https://img.shields.io/badge/-LinkedIn-0072b1?&style=for-the-badge&logo=linkedin&logoColor=white" /></a>
+Best way to reach me is [LinkedIn](https://www.linkedin.com/in/kurtmccleansr/).
+<a href="[https://linkedin.com](https://www.linkedin.com/in/kurtmccleansr/)"><img src="https://img.shields.io/badge/-LinkedIn-0072b1?&style=for-the-badge&logo=linkedin&logoColor=white" /></a>
 
