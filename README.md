@@ -2,7 +2,7 @@
 
 Junior data engineer building pipelines on my own infrastructure. I like turning messy public data into clean, tested, trustworthy analytics, with a particular interest in aviation and in construction and insurance risk.
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](YOUR_LINKEDIN_URL)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)]([YOUR_LINKEDIN_URL](https://www.linkedin.com/in/kurtmccleansr/))
 
 ## 🚀 Projects
 
