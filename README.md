@@ -32,6 +32,5 @@ Both run on a self-hosted Proxmox VM with Docker Compose, Airflow, PostgreSQL, d
 
 
 
-Best way to reach me is [LinkedIn](https://www.linkedin.com/in/kurtmccleansr/).
-<a href="[https://linkedin.com](https://www.linkedin.com/in/kurtmccleansr/)"><img src="https://img.shields.io/badge/-LinkedIn-0072b1?&style=for-the-badge&logo=linkedin&logoColor=white" /></a>
+Best way to reach me is [LinkedIn](https://www.linkedin.com/in/kurtmccleansr/)
 
