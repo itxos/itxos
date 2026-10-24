@@ -26,8 +26,7 @@ Both run on a self-hosted Proxmox VM with Docker Compose, Airflow, PostgreSQL, d
 
 ## 🔭 Currently
 
-- [Your next project or what you're studying, or delete this section]
-- Self-hosting everything on a Proxmox homelab
+- Self-hosting everything on a Proxmox server
 
 ## 📫 Get in touch
 
