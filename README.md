@@ -1,12 +1,18 @@
 # 👋 Hi, I'm Kurt
 
-Data Security engineer building pipelines on my own infrastructure. I like turning messy API data into clean, tested, trustworthy analytics, and I'm especially interested in aviation data.
+Junior data engineer building pipelines on my own infrastructure. I like turning messy public data into clean, tested, trustworthy analytics, with a particular interest in aviation and in construction and insurance risk.
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kurtmccleansr/?isSelfProfile=true)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](YOUR_LINKEDIN_URL)
 
-## 🚀 Featured project
+## 🚀 Projects
 
-**[Flight Operations Pipeline](https://github.com/itxos/flight-ops-pipeline)**: an end-to-end ELT pipeline that ingests live flight data for ORD, MSP, and ATL, models it with dbt, and serves delay and cancellation analytics in Metabase. Includes idempotent loads, automated data quality tests, and a write-up of the data issues I found and fixed along the way.
+**[Flight Operations Pipeline](https://github.com/itxos/flight-ops-pipeline)**
+An ELT pipeline that ingests live flight data for ORD, MSP, and ATL from the AeroDataBox API, models it with dbt, and serves delay and cancellation analytics in Metabase. While validating the results, I found that the API's timestamps mixed runway and gate times, which skewed departure delays, and redefined the headline metric around arrivals.
+
+**[Texas Construction Safety Pipeline](https://github.com/itxos/construction-risk-pipeline)**
+A scheduled pipeline that loads federal OSHA inspection and citation records for Texas construction employers from the Department of Labor API. It handles an undocumented rate limit with a resumable loader, accounts for citations that post months after an inspection, and enforces privacy rules in the database so the dashboard never exposes company names.
+
+Both run on a self-hosted Proxmox VM with Docker Compose, Airflow, PostgreSQL, dbt, and Metabase.
 
 ## 🛠️ Tools I work with
 
@@ -20,11 +26,12 @@ Data Security engineer building pipelines on my own infrastructure. I like turni
 
 ## 🔭 Currently
 
-- Building my next project: [a real-time streaming pipeline, update once decided]
-- Learning: [Kafka, Spark, Iceberg]
+- [Your next project or what you're studying, or delete this section]
 - Self-hosting everything on a Proxmox homelab
 
 ## 📫 Get in touch
+
+
 
 Best way to reach me is [LinkedIn](https://www.linkedin.com/in/kurtmccleansr/?isSelfProfile=true).
 <a href="https://linkedin.com"><img src="https://img.shields.io/badge/-LinkedIn-0072b1?&style=for-the-badge&logo=linkedin&logoColor=white" /></a>
